@@ -1,0 +1,1028 @@
+<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"></head><body>
+<title>RLM Events Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,750&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#F4F7F5; --ink:#15211A; --ink-2:#46574D; --ink-3:#76867C;
+  --line:#E3E9E4; --line-2:#CFD8D1;
+  --accent:#16704F; --accent-ink:#FFFFFF; --accent-soft:#E2F2E9;
+  --warn:#A86200; --warn-soft:#FDF1DC; --bad:#B3381E; --bad-soft:#FCE9E3;
+  --info:#2B5A9E; --info-soft:#E6EEFA; --mute:#5F6B64; --mute-soft:#EEF1EF;
+  --bar-worked:#B7C8BE; --shadow:0 10px 36px rgba(20,40,30,.16);
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg); color:var(--ink); font-family:var(--f-body); font-size:15px; line-height:1.5}
+.wrap{max-width:1180px; margin:0 auto; padding-inline:20px; padding-block:20px 60px}
+@media (max-width:560px){ .wrap{padding-inline:16px} }
+button,input,select{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.num,td.n{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--f-mono); font-size:12.5px}
+.muted{color:var(--ink-3)}
+
+/* Header */
+.top{display:flex; flex-wrap:wrap; gap:12px 24px; align-items:flex-end; justify-content:space-between; padding-bottom:16px}
+.crumb{font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3)}
+h1{font-family:var(--f-display); font-weight:750; font-size:30px; letter-spacing:-.02em; margin:2px 0 4px}
+.sub{color:var(--ink-2); margin:0}
+.sample{font-size:12px; color:var(--warn); background:var(--warn-soft); padding:2px 8px; border-radius:99px; margin-left:4px; white-space:nowrap}
+.btn{display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line-2); background:var(--surface); padding:9px 14px; border-radius:9px; cursor:pointer; font-weight:500; white-space:nowrap}
+.btn:hover{border-color:var(--ink-3)}
+.btn.primary{background:var(--accent); color:var(--accent-ink); border-color:var(--accent)}
+.btn.small{padding:6px 11px; font-size:13.5px}
+.btn:disabled{opacity:.45; cursor:default}
+.btn svg{width:16px; height:16px}
+
+/* Filters */
+.filters{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:var(--bg); padding-block:10px; margin-inline:-20px; padding-inline:20px; border-bottom:1px solid var(--line)}
+@media (max-width:560px){ .filters{margin-inline:-16px; padding-inline:16px} }
+.frow{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+.seg{display:inline-flex; background:var(--surface-2); border-radius:10px; padding:3px; gap:2px; flex-wrap:wrap}
+.seg button{border:0; background:transparent; padding:7px 13px; border-radius:8px; cursor:pointer; color:var(--ink-2); font-weight:500; font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--surface); color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.sel{height:38px; border:1px solid var(--line-2); background:var(--surface); border-radius:9px; padding:0 10px; font-size:14px; max-width:210px}
+.sel[type=search]{width:220px}
+.sel[type=date]{max-width:150px}
+.clear{border:0; background:transparent; color:var(--accent); font-weight:600; cursor:pointer; padding:6px 8px}
+
+/* Tabs */
+.tabs{display:flex; gap:4px; border-bottom:1px solid var(--line); margin-top:16px; overflow-x:auto}
+.tabs button{border:0; background:transparent; padding:11px 16px; cursor:pointer; color:var(--ink-2); font-weight:500; font-size:15px; border-bottom:3px solid transparent; margin-bottom:-1px; white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--accent); font-weight:600}
+.panel{padding-top:20px; display:flex; flex-direction:column; gap:20px}
+.hint{margin:0; font-size:13.5px; color:var(--ink-3)}
+
+/* Big numbers */
+.big{display:grid; grid-template-columns:repeat(4,1fr); gap:12px}
+@media (max-width:860px){ .big{grid-template-columns:repeat(2,1fr)} }
+.bt{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px 18px; display:flex; flex-direction:column; gap:2px; text-align:left; cursor:pointer}
+.bt:hover{border-color:var(--ink-3)}
+.bt .k{font-size:14px; font-weight:600; color:var(--ink-2)}
+.bt .v{font-family:var(--f-display); font-weight:750; font-size:36px; letter-spacing:-.02em; line-height:1.15; font-variant-numeric:tabular-nums}
+.bt .h{font-size:13px; color:var(--ink-3)}
+.bt.warn .v{color:var(--warn)} .bt.good .v{color:var(--accent)}
+
+/* Attention */
+.attn{background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden}
+.attn h2,.card h2{font-family:var(--f-display); font-weight:600; font-size:18px; margin:0; letter-spacing:-.01em}
+.attn .hd{padding:14px 18px; display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; border-bottom:1px solid var(--line)}
+.arow{display:flex; align-items:center; gap:14px; padding:13px 18px; border-top:1px solid var(--line)}
+.arow:first-of-type{border-top:0}
+.arow .no{font-family:var(--f-display); font-weight:750; font-size:24px; min-width:56px; font-variant-numeric:tabular-nums; color:var(--bad)}
+.arow .tx{flex:1} .arow .tx b{display:block; font-weight:600} .arow .tx span{font-size:13.5px; color:var(--ink-3)}
+.arow.ok .no{color:var(--accent)}
+@media (max-width:560px){ .arow{flex-wrap:wrap} .arow .btn{margin-left:70px} }
+
+/* Journey */
+.card{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:18px}
+.card .ch{display:flex; justify-content:space-between; gap:12px; align-items:baseline; margin-bottom:14px; flex-wrap:wrap}
+.steps{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; align-items:stretch}
+@media (max-width:760px){ .steps{grid-template-columns:repeat(2,1fr)} }
+.step{background:var(--surface-2); border-radius:12px; padding:14px; position:relative}
+.step .sl{font-size:13.5px; color:var(--ink-2); font-weight:500}
+.step .sv{font-family:var(--f-display); font-weight:750; font-size:28px; font-variant-numeric:tabular-nums}
+.step .sp{font-size:13px; color:var(--ink-3)}
+.step .bar{height:6px; background:var(--line); border-radius:3px; margin-top:10px; overflow:hidden}
+.step .bar i{display:block; height:100%; background:var(--accent)}
+.step .lost{font-size:12.5px; color:var(--bad); margin-top:6px}
+.step:last-child{background:var(--accent-soft)} .step:last-child .sv{color:var(--accent)}
+
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:20px}
+@media (max-width:960px){ .grid2{grid-template-columns:1fr} }
+
+/* Tables */
+.tw{overflow-x:auto; border:1px solid var(--line); border-radius:12px; background:var(--surface)}
+.card .tw{border:0; border-radius:0; margin-inline:-18px; margin-bottom:-18px; border-top:1px solid var(--line)}
+table{border-collapse:collapse; width:100%; font-size:14px}
+th{font-size:12.5px; color:var(--ink-3); font-weight:600; text-align:left; padding:11px 14px; background:var(--surface-2); white-space:nowrap}
+th.n,td.n{text-align:right}
+th.sortable{cursor:pointer} th.sortable:hover{color:var(--ink)}
+td{padding:12px 14px; border-top:1px solid var(--line); white-space:nowrap; vertical-align:middle}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover td{background:var(--surface-2)}
+tfoot td{font-weight:600; background:var(--surface-2)}
+.who{display:flex; gap:10px; align-items:center}
+.av{width:30px; height:30px; border-radius:99px; display:grid; place-items:center; font-size:11.5px; font-weight:600; background:var(--accent-soft); color:var(--accent); flex:none}
+.two b{font-weight:500; display:block} .two span{font-size:12.5px; color:var(--ink-3)}
+.pill{display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:500; padding:3px 10px; border-radius:99px; white-space:nowrap}
+.pill::before{content:""; width:7px; height:7px; border-radius:99px; background:currentColor}
+.t-bad{background:var(--bad-soft); color:var(--bad)} .t-warn{background:var(--warn-soft); color:var(--warn)}
+.t-info{background:var(--info-soft); color:var(--info)} .t-good{background:var(--accent-soft); color:var(--accent)}
+.t-mute{background:var(--mute-soft); color:var(--mute)}
+.red{color:var(--bad); font-weight:600}
+.green{color:var(--accent); font-weight:600}
+.convbar{display:flex; align-items:center; gap:8px; justify-content:flex-end}
+.convbar .tr{width:60px; height:6px; background:var(--surface-2); border-radius:3px; overflow:hidden}
+.convbar .tr i{display:block; height:100%; background:var(--accent)}
+.empty{padding:40px 16px; text-align:center; color:var(--ink-3)}
+.pager{display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; font-size:14px; color:var(--ink-2)}
+.pager .btns{display:flex; gap:6px}
+
+/* Chart */
+.chart-wrap{overflow-x:auto}
+.chart-wrap svg{display:block; width:100%; min-width:600px; height:auto}
+.legend{display:flex; gap:16px; flex-wrap:wrap; font-size:13px; color:var(--ink-2)}
+.legend span{display:inline-flex; align-items:center; gap:6px}
+.legend i{width:10px; height:10px; border-radius:3px; display:inline-block}
+
+/* Drawer */
+.scrim{position:fixed; inset:0; background:rgba(8,16,12,.4); z-index:40}
+.drawer{position:fixed; top:0; right:0; bottom:0; width:min(600px,100%); background:var(--surface); z-index:41; box-shadow:var(--shadow); display:flex; flex-direction:column; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px)}
+.dh{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:18px 20px 14px; border-bottom:1px solid var(--line)}
+.dh h3{font-family:var(--f-display); font-weight:600; font-size:20px; margin:2px 0 0}
+.db{overflow-y:auto; padding:18px 20px 30px; display:flex; flex-direction:column; gap:20px}
+.x{border:0; background:var(--surface-2); width:36px; height:36px; border-radius:9px; cursor:pointer; font-size:20px; flex:none}
+.facts{display:grid; grid-template-columns:120px 1fr; gap:8px 12px; font-size:14px; margin:0}
+.facts dt{color:var(--ink-3)} .facts dd{margin:0}
+.sec-t{font-size:13px; color:var(--ink-3); margin:0 0 10px; font-weight:600}
+.tl{list-style:none; margin:0; padding:0}
+.tl li{position:relative; padding:0 0 16px 28px}
+.tl li::before{content:""; position:absolute; left:6px; top:16px; bottom:0; width:2px; background:var(--line)}
+.tl li:last-child::before{display:none}
+.tl .nd{position:absolute; left:0; top:4px; width:14px; height:14px; border-radius:99px; background:var(--ink-3)}
+.tl .nd.good{background:var(--accent)} .tl .nd.bad{background:var(--bad)} .tl .nd.warn{background:var(--warn)} .tl .nd.info{background:var(--info)}
+.tl .tt{font-weight:600} .tl .ts{font-size:13px; color:var(--ink-3)}
+.items{display:flex; flex-direction:column; gap:6px}
+.item{display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:14px; padding:9px 12px; background:var(--surface-2); border-radius:8px; border:0; text-align:left; width:100%}
+button.item{cursor:pointer} button.item:hover{outline:1px solid var(--line-2)}
+.mini{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+.mini div{background:var(--surface-2); border-radius:10px; padding:10px 12px}
+.mini b{display:block; font-family:var(--f-display); font-size:22px; font-weight:750; font-variant-numeric:tabular-nums}
+.mini span{font-size:12.5px; color:var(--ink-3)}
+.dh .sub2{font-size:13.5px; color:var(--ink-3); margin-top:2px}
+.story{border-radius:14px; padding:16px; display:flex; gap:14px; align-items:flex-start}
+.story .ic{width:40px; height:40px; border-radius:99px; background:var(--surface); display:grid; place-items:center; flex:none}
+.story .ic svg{width:20px; height:20px}
+.story h4{margin:0; font-size:18px; font-weight:600; line-height:1.3}
+.story p{margin:4px 0 0; color:var(--ink-2); font-size:14.5px}
+.story .next{margin-top:10px; font-size:14px; font-weight:600; color:var(--ink)}
+.story .next::before{content:"Next step: "; color:var(--ink-3); font-weight:500}
+.s-bad{background:var(--bad-soft)} .s-bad .ic,.s-bad h4{color:var(--bad)}
+.s-warn{background:var(--warn-soft)} .s-warn .ic,.s-warn h4{color:var(--warn)}
+.s-info{background:var(--info-soft)} .s-info .ic,.s-info h4{color:var(--info)}
+.s-good{background:var(--accent-soft)} .s-good .ic,.s-good h4{color:var(--accent)}
+.s-mute{background:var(--mute-soft)} .s-mute .ic,.s-mute h4{color:var(--mute)}
+.acts{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; align-items:center}
+.qf{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.qf div{border:1px solid var(--line); border-radius:12px; padding:11px 13px}
+.qf span{font-size:12.5px; color:var(--ink-3); display:block}
+.qf b{font-weight:600; font-size:15.5px; display:block}
+.qf small{display:block; color:var(--ink-3); font-size:12.5px}
+.st{list-style:none; margin:0; padding:0}
+.st li{display:grid; grid-template-columns:76px 34px 1fr; gap:12px; position:relative; padding-bottom:18px}
+.st li::before{content:""; position:absolute; left:104px; top:36px; bottom:2px; width:2px; background:var(--line)}
+.st li:last-child::before{display:none}
+.st .when{font-size:12.5px; color:var(--ink-3); text-align:right; padding-top:3px; line-height:1.35}
+.st .ic{width:34px; height:34px; border-radius:99px; display:grid; place-items:center; background:var(--surface-2); color:var(--ink-2)}
+.st .ic svg{width:17px; height:17px}
+.st .ic.good{background:var(--accent-soft); color:var(--accent)} .st .ic.bad{background:var(--bad-soft); color:var(--bad)}
+.st .ic.warn{background:var(--warn-soft); color:var(--warn)} .st .ic.info{background:var(--info-soft); color:var(--info)}
+.st .what b{display:block; font-weight:600; padding-top:5px}
+.st .what span{font-size:13.5px; color:var(--ink-2)}
+.cart{border:1px solid var(--line); border-radius:12px; overflow:hidden}
+.cart div{display:flex; justify-content:space-between; gap:10px; padding:10px 13px; font-size:14px; border-top:1px solid var(--line)}
+.cart div:first-child{border-top:0}
+.cart .tot{background:var(--surface-2); font-weight:600}
+.means{display:flex; gap:12px; align-items:flex-start; border:1px solid var(--line); border-radius:14px; padding:14px 16px}
+.means .ic{width:36px; height:36px; border-radius:99px; background:var(--info-soft); color:var(--info); display:grid; place-items:center; flex:none}
+.means .ic svg{width:18px; height:18px}
+.means b{font-size:16px; font-weight:600}
+.means p{margin:2px 0 0; font-size:14.5px; color:var(--ink-2)}
+.means .why{color:var(--ink); font-weight:500}
+.backlink{border:0; background:transparent; color:var(--accent); font-weight:600; cursor:pointer; padding:4px 0; align-self:flex-start; font-size:15px}
+.phead{display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-top:-8px}
+.ptitle{font-family:var(--f-display); font-weight:750; font-size:28px; letter-spacing:-.02em; margin:2px 0 2px}
+.track{display:grid; grid-template-columns:repeat(5,1fr); gap:0; position:relative}
+.tstep{display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; padding:0 8px; position:relative}
+.tstep::before{content:""; position:absolute; top:22px; left:-50%; width:100%; height:3px; background:var(--line); z-index:0}
+.tstep:first-child::before{display:none}
+.tstep.done::before{background:var(--accent)}
+.tstep.fail::before,.tstep.warn::before{background:var(--line)}
+.tdot{width:46px; height:46px; border-radius:99px; display:grid; place-items:center; background:var(--surface); border:2px dashed var(--line-2); color:var(--ink-3); position:relative; z-index:1; margin-bottom:6px}
+.tdot svg{width:21px; height:21px}
+.tstep.done .tdot{background:var(--accent); border:2px solid var(--accent); color:var(--accent-ink)}
+.tstep.fail .tdot{background:var(--bad-soft); border:2px solid var(--bad); color:var(--bad)}
+.tstep.warn .tdot{background:var(--warn-soft); border:2px solid var(--warn); color:var(--warn)}
+.tstep b{font-size:14.5px; font-weight:600}
+.tstep span{font-size:13px; color:var(--ink-2); line-height:1.4}
+.tstep.fail span{color:var(--bad)} .tstep.todo b,.tstep.todo span{color:var(--ink-3)}
+@media (max-width:720px){
+  .track{grid-template-columns:1fr; gap:14px}
+  .tstep{flex-direction:row; text-align:left; align-items:center; gap:12px; flex-wrap:wrap}
+  .tstep::before{display:none}
+  .tdot{margin:0; flex:none}
+  .tstep span{flex-basis:100%; padding-left:58px; margin-top:-8px}
+}
+.cols{display:grid; grid-template-columns:1.25fr 1fr; gap:20px; align-items:start}
+@media (max-width:960px){ .cols{grid-template-columns:1fr} }
+.colL,.colR{display:flex; flex-direction:column; gap:18px; min-width:0}
+.ch2{display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px}
+.h2{font-family:var(--f-display); font-weight:600; font-size:18px; margin:0; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.chip{display:inline-flex; gap:6px; align-items:center; font-size:13px; background:var(--accent-soft); color:var(--accent); padding:3px 5px 3px 10px; border-radius:99px; font-family:var(--f-body); font-weight:500}
+.chip button{border:0; background:transparent; cursor:pointer; color:inherit; font-size:15px; line-height:1; width:20px; height:20px; border-radius:99px}
+.fchips{display:flex; gap:6px; flex-wrap:wrap}
+.fchip{border:1px solid var(--line-2); background:var(--surface); border-radius:99px; padding:6px 12px; cursor:pointer; font-size:13.5px; color:var(--ink-2)}
+.fchip b{font-weight:600; color:var(--ink); margin-left:3px}
+.fchip.on{background:var(--ink); border-color:var(--ink); color:var(--surface)} .fchip.on b{color:var(--surface)}
+.fchip.hot:not(.on) b{color:var(--bad)}
+tr.sel-row td{background:var(--accent-soft)}
+.toast{position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); background:var(--ink); color:var(--bg); padding:10px 16px; border-radius:9px; font-size:14px; z-index:60; box-shadow:var(--shadow); max-width:calc(100% - 32px)}
+/* Priority / SLA */
+.hbtns{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+.bell{position:relative}
+.badge{position:absolute; top:-8px; right:-8px; min-width:20px; height:20px; padding:0 5px; border-radius:99px; background:var(--bad); color:#fff; font-size:11.5px; font-weight:600; display:grid; place-items:center}
+.tag{display:inline-block; font-size:11.5px; font-weight:600; padding:1px 8px; border-radius:99px; background:var(--warn-soft); color:var(--warn); margin-left:6px; vertical-align:1px}
+tr.grp td{background:var(--surface-2); font-size:12.5px; font-weight:600; color:var(--ink-2); padding:8px 14px}
+@media (min-width:961px){ .grid2.wide{grid-template-columns:1.6fr 1fr} }
+.split{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+@media (max-width:860px){ .split{grid-template-columns:1fr} }
+.sp-card{border:1px solid var(--line); border-radius:14px; padding:16px 18px; text-align:left; background:var(--surface); cursor:pointer; display:flex; flex-direction:column; gap:12px}
+.sp-card:hover{border-color:var(--ink-3)}
+.sp-card.pri{border-left:5px solid var(--warn)}
+.sp-h b{display:block; font-family:var(--f-display); font-weight:600; font-size:18px}
+.sp-h span{font-size:13px; color:var(--ink-3)}
+.mini.four{grid-template-columns:repeat(4,1fr); width:100%}
+.mini.four>span{display:block; background:var(--surface-2); border-radius:10px; padding:10px 12px}
+.mini.four>span>span{display:block}
+@media (max-width:560px){ .mini.four{grid-template-columns:repeat(2,1fr)} }
+.note{background:var(--info-soft); color:var(--ink); border-radius:12px; padding:12px 14px; font-size:14px; margin:0}
+.cfgrow{display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; padding:12px 0; border-top:1px solid var(--line)}
+.cfgrow:first-child{border-top:0}
+.cfgrow .two{flex:1 1 190px}
+.sw{display:inline-flex; gap:7px; align-items:center; font-size:14px; cursor:pointer; white-space:nowrap}
+.sw input{width:18px; height:18px; accent-color:var(--accent)}
+.dot{display:inline-block; width:8px; height:8px; border-radius:99px; background:var(--bad); margin-left:6px}
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="crumb">RLM Hub · Floor Manager &amp; Manager</div>
+      <h1>Events Tracker</h1>
+      <p class="sub">Priority and secondary events: who called, who missed the SLA, what's pending, and how many became orders.<span class="sample">Sample data</span></p>
+    </div>
+    <div class="hbtns">
+    <button class="btn bell" id="bellBtn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7 2.5 7h-17S6 15 6 9"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>SLA alerts<span class="badge" id="bellN" hidden></span></button>
+    <button class="btn" id="slaBtn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>SLA settings</button>
+    <button class="btn primary" id="exportBtn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Download report</button>
+    </div>
+  </header>
+
+  <div class="filters">
+    <div class="frow">
+      <div class="seg" id="datePresets" role="group" aria-label="Date">
+        <button type="button" data-p="today">Today</button>
+        <button type="button" data-p="yesterday">Yesterday</button>
+        <button type="button" data-p="7d">Last 7 days</button>
+        <button type="button" data-p="month">This month</button>
+        <button type="button" data-p="custom">Pick dates</button>
+      </div>
+      <span id="customRange" class="frow" hidden>
+        <input class="sel" type="date" id="fromD" aria-label="From date">
+        <input class="sel" type="date" id="toD" aria-label="To date">
+      </span>
+      <select class="sel" id="fType" aria-label="Event type"></select>
+      <select class="sel" id="fAgent" aria-label="Agent"></select>
+      <select class="sel" id="fStatus" aria-label="Status"></select>
+      <input class="sel" type="search" id="fSearch" placeholder="Search shop, KP-ID, phone" aria-label="Search">
+      <button class="clear" id="resetBtn" type="button" hidden>Clear filters</button>
+    </div>
+  </div>
+
+  <nav class="tabs" role="tablist" id="tabs">
+    <button role="tab" data-tab="summary">Summary</button>
+    <button role="tab" data-tab="agents">Agents</button>
+    <button role="tab" data-tab="events">All events</button>
+    <button role="tab" data-tab="daily">Day by day</button>
+  </nav>
+
+  <main id="view" class="panel"></main>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" hidden aria-modal="true" role="dialog"></aside>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+const SLA_OPTS = [15,30,60,120,240]; // "call within" choices for priority events, in minutes
+const PAGE = 25;
+const NOW = new Date();
+const DAY = 864e5;
+const today0 = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate()).getTime();
+
+const AGENTS = [
+  {id:'AG-1041', name:'Priya Sharma',  share:1.15, callRate:.96, tat:24,  conv:1.28},
+  {id:'AG-1058', name:'Rohit Verma',   share:1.05, callRate:.93, tat:35,  conv:1.08},
+  {id:'AG-1062', name:'Neha Patel',    share:1.00, callRate:.94, tat:30,  conv:1.15},
+  {id:'AG-1077', name:'Ankit Yadav',   share:1.00, callRate:.80, tat:70,  conv:.90},
+  {id:'AG-1083', name:'Sana Qureshi',  share:.95,  callRate:.91, tat:40,  conv:1.02},
+  {id:'AG-1090', name:'Vikas Chouhan', share:1.00, callRate:.88, tat:48,  conv:.96},
+  {id:'AG-1104', name:'Pooja Rajput',  share:.90,  callRate:.92, tat:33,  conv:1.00},
+  {id:'AG-1112', name:'Deepak Meena',  share:.95,  callRate:.70, tat:105, conv:.78},
+];
+const TYPES = [
+  // pri + sla are only the defaults; the floor manager changes them in SLA settings
+  {k:'payment',  label:'Payment failed',           w:11, conv:.46, cart:true,  pri:true, sla:30},
+  {k:'cart3',    label:'Added to cart 3 times',    w:8,  conv:.32, cart:true,  pri:true, sla:60},
+  {k:'cart',     label:'Added to cart',            w:24, conv:.24, cart:true,  pri:true, sla:120},
+  {k:'view3',    label:'Viewed a product 3 times', w:12, conv:.15, cart:false, pri:true, sla:120},
+  {k:'checkout', label:'Left at checkout',         w:18, conv:.34, cart:true},
+  {k:'orderfail',label:'Order failed',             w:7,  conv:.40, cart:true},
+  {k:'kyc',      label:'KYC submitted',            w:12, conv:.17, cart:false},
+  {k:'otp',      label:'Signed up, no order',      w:12, conv:.11, cart:false},
+];
+const TYPE = Object.fromEntries(TYPES.map(t=>[t.k,t]));
+const MEANS = {
+  cart3:    {short:'Added the same product 3 times, did not buy', long:'The retailer added a product to the cart three times in the Partner App but still did not place the order.', why:'Call quickly. They clearly want this product and something is stopping them.'},
+  view3:    {short:'Opened the same product 3 times', long:'The retailer opened the same product page three times in the Partner App without adding it to the cart.', why:'Call to answer their questions on this product and help them order.'},
+  cart:     {short:'Added products, did not buy', long:'The retailer added products to the cart in the Partner App but did not place the order.', why:'Call to help them finish the order.'},
+  checkout: {short:'Reached checkout, left without paying', long:'The retailer went to the checkout page but left without paying.', why:'Call to find out what stopped them and help them pay.'},
+  payment:  {short:'Tried to pay, payment failed', long:'The retailer tried to pay but the payment did not go through.', why:'Call quickly. They want to buy, and the order can be saved.'},
+  orderfail:{short:'Order did not go through', long:'The retailer placed an order but it failed.', why:'Call to place the order again for them.'},
+  kyc:      {short:'Sent KYC documents', long:'The retailer submitted their KYC documents in the app.', why:'Call to welcome them and help with their first order.'},
+  otp:      {short:'New sign-up, no order yet', long:'The retailer signed up on the Partner App but has not ordered anything.', why:'Call to introduce products and get the first order.'},
+};
+const STATUS = {
+  unassigned:  {label:'Not assigned',       tone:'bad',  color:'var(--bad)'},
+  notcalled:   {label:'Not called yet',     tone:'warn', color:'var(--warn)'},
+  notconnected:{label:'Called, no answer',  tone:'warn', color:'var(--warn)'},
+  followup:    {label:'Call back later',    tone:'info', color:'var(--info)'},
+  converted:   {label:'Order placed',       tone:'good', color:'var(--accent)'},
+  lost:        {label:'Closed, no order',   tone:'mute', color:'var(--ink-3)'},
+};
+const PENDING = new Set(['unassigned','notcalled','notconnected','followup']);
+const PRODUCTS = [
+  ['Katyayani Imida',280],['Katyayani EMA 5',296],['Katyayani Chakraveer',440],['Katyayani Chakrawarti',358],
+  ['Katyayani Triple Attack (Liquid)',509],['Katyayani Azodharma',310],['Katyayani Antivirus',327],
+  ['Katyayani NPK 19-19-19',330],['Katyayani NPK 00:52:34',460],['Katyayani Activated Humic + Fulvic 98',376],
+  ['Katyayani Bhumiraja',364],['Katyayani Bhannaat',334],['Katyayani Pro Grow',290]];
+const SHOP_A = ['Shri Ram','Jai Kisan','Maa Durga','Balaji','Annapurna','Kisan Seva','Ganesh','Om Sai','Shiv Shakti','Laxmi','Hari Om','Gurukripa','Bharat','Mahalaxmi','Jai Ambe','Narmada'];
+const SHOP_B = ['Krishi Kendra','Agro Agency','Beej Bhandar','Khad Beej Bhandar','Agri Clinic','Krishi Seva Kendra','Traders','Agro Centre'];
+const PLACES = [['Vidisha','MP'],['Sehore','MP'],['Raisen','MP'],['Narmadapuram','MP'],['Dewas','MP'],['Ujjain','MP'],['Shajapur','MP'],['Sagar','MP'],['Guna','MP'],['Kota','RJ'],['Jhalawar','RJ'],['Bundi','RJ'],['Lalitpur','UP'],['Jhansi','UP'],['Akola','MH'],['Jalgaon','MH'],['Latur','MH'],['Nanded','MH']];
+const NC_OUT = ['No answer','Switched off','Busy','Call cut'];
+const FU_DISP = ['Asked to call back','Will order later','Checking with owner','Wants better rate'];
+const LOST_DISP = ['Not interested','Price higher than distributor','Already has stock','Ordered from local distributor','Was just browsing'];
+const KYC_FU = ['Documents to re-upload','Asked to call back'];
+
+/* ---------- Seeded sample data ---------- */
+let seed = 20260926;
+function rnd(){ seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }
+const pick = a => a[Math.floor(rnd()*a.length)];
+function wpick(arr, wk){ const tot = arr.reduce((s,x)=>s+x[wk],0); let r = rnd()*tot; for(const x of arr){ r -= x[wk]; if(r<=0) return x; } return arr[arr.length-1]; }
+const expo = m => -Math.log(1-rnd()) * m;
+
+const RETAILERS = Array.from({length:420}, (_,i)=>{
+  const [d,st] = pick(PLACES);
+  const ph = String(Math.floor(6000000000 + rnd()*3999999999));
+  return {name:`${pick(SHOP_A)} ${pick(SHOP_B)}`, kp:'KP-'+(1200+Math.floor(rnd()*48000)), phone:ph, district:d, state:st, owner: rnd() < .04 ? null : wpick(AGENTS,'share').id}; // owner = agent who holds this retailer's lead
+});
+
+function generate(){
+  const out = []; let n = 48210;
+  for(let d = 34; d >= 0; d--){
+    const day0 = today0 - d*DAY; const dow = new Date(day0).getDay();
+    let count = Math.round((62 + rnd()*44) * (dow===0 ? .5 : 1));
+    for(let i=0;i<count;i++){
+      const t = day0 + (7*60 + rnd()*15*60)*6e4;
+      if(t > NOW.getTime()) continue;
+      out.push(makeEvent(t, 'EV-'+(n++)));
+    }
+  }
+  return out.sort((a,b)=>b.at-a.at);
+}
+function makeEvent(t, id){
+  const type = wpick(TYPES,'w'); const r = pick(RETAILERS);
+  const ageMin = (NOW - t)/6e4;
+  const e = {id, at:t, type:type.k, r, items:[], value:0, agent:null, assignedAt:null, movedFrom:null, movedAt:null, viewed: type.k==='view3' ? pick(PRODUCTS)[0] : null, calls:[], status:'', disp:'', order:null, orderValue:0, convertedAt:null};
+  if(type.cart){
+    const k = 1 + Math.floor(rnd()*3);
+    for(let j=0;j<k;j++){ const [p,price] = pick(PRODUCTS); if(e.items.some(x=>x.p===p)) continue; const qty = 10*(1+Math.floor(rnd()*6)); e.items.push({p,price,qty}); e.value += price*qty; }
+  }
+  // An event always goes to the agent who holds the retailer's lead
+  if(!r.owner){ e.status = 'unassigned'; return e; }
+  const ag = AGENTS.find(a=>a.id===r.owner); e.agent = ag.id; e.assignedAt = t + (1 + rnd()*6)*6e4;
+  let first = 4 + expo(ag.tat);
+  const callP = ageMin > 2880 ? ag.callRate + (1-ag.callRate)*.4 : ag.callRate * Math.min(1, .2 + ageMin/240);
+  if(rnd() > callP || first > ageMin){
+    // Old events never called by weak agents stay "not called" — leakage
+    e.status = 'notcalled'; return e;
+  }
+  let ct = e.assignedAt + first*6e4; let connected = false; const maxTry = 1 + Math.floor(rnd()*3);
+  for(let k=0;k<maxTry && ct < NOW.getTime();k++){
+    const ok = rnd() < .56;
+    const dur = ok ? 40 + Math.floor(expo(150)) : 0;
+    e.calls.push({at:ct, ok, out: ok ? 'Connected' : pick(NC_OUT), dur});
+    if(ok){ connected = true; break; }
+    ct += (45 + expo(180))*6e4;
+  }
+  const last = e.calls[e.calls.length-1];
+  if(connected){
+    const p = Math.min(.8, type.conv * ag.conv * 1.3);
+    if(rnd() < p){
+      e.status = 'converted'; e.disp = 'Order placed';
+      e.convertedAt = last.at + (3 + expo(40))*6e4;
+      if(e.convertedAt > NOW) e.convertedAt = NOW.getTime();
+      e.order = 'KO-' + (905000 + Math.floor(rnd()*90000));
+      e.orderValue = type.cart ? Math.round(e.value * (.85 + rnd()*.6)) : Math.round((3 + rnd()*14) * 1000);
+    } else if((NOW - last.at)/36e5 < 30 && rnd() < .6){
+      e.status = 'followup'; e.disp = type.k==='kyc' ? pick(KYC_FU) : pick(FU_DISP);
+    } else { e.status = 'lost'; e.disp = pick(LOST_DISP); }
+  } else {
+    if(e.calls.length >= 3 && (NOW - t)/36e5 > 48){ e.status = 'lost'; e.disp = 'Unreachable after 3 attempts'; }
+    else { e.status = 'notconnected'; e.disp = last.out; }
+  }
+  return e;
+}
+const EVENTS = generate();
+const AG = Object.fromEntries(AGENTS.map(a=>[a.id,a]));
+
+/* ---------- Lead move: open events follow the lead automatically ---------- */
+function moveLead(r, to, at){
+  r.owner = to; let n = 0;
+  for(const e of EVENTS){
+    if(e.r !== r || !PENDING.has(e.status) || e.agent === to) continue;
+    if(e.agent){ e.movedFrom = e.agent; e.movedAt = Math.max(at, e.at); }
+    else { e.assignedAt = Math.max(at, e.at); e.status = 'notcalled'; }
+    e.agent = to; n++;
+  }
+  return n;
+}
+RETAILERS.forEach(r=>{ if(!r.owner || rnd() > .08) return; moveLead(r, pick(AGENTS.filter(a=>a.id!==r.owner)).id, NOW.getTime() - rnd()*90*6e4); });
+
+/* ---------- Priority + SLA settings (saved on this device) ---------- */
+const CFG_DEF = () => Object.fromEntries(TYPES.map(t=>[t.k, {pri:!!t.pri, sla:t.sla || 60}]));
+let CFG = CFG_DEF();
+try { const c = JSON.parse(localStorage.getItem('rlm-evt-sla') || 'null'); if(c) for(const k in CFG) if(c[k]) CFG[k] = {pri:!!c[k].pri, sla:SLA_OPTS.includes(+c[k].sla) ? +c[k].sla : CFG[k].sla}; } catch(e){}
+const saveCfg = () => { try { localStorage.setItem('rlm-evt-sla', JSON.stringify(CFG)); } catch(e){} };
+const isPri = k => CFG[k].pri;
+const slaOf = e => isPri(e.type) ? CFG[e.type].sla : null;
+// SLA clock starts when the current agent got the event (after a lead move, from the move)
+const gotAt = e => e.calls.length ? e.assignedAt : (e.movedAt || e.assignedAt);
+const breachAt = e => gotAt(e) + slaOf(e)*6e4;
+function breached(e){
+  const s = slaOf(e); if(s == null || !e.agent) return false;
+  if(e.calls.length) return !(e.movedAt && e.calls[0].at < e.movedAt) && (e.calls[0].at - e.assignedAt)/6e4 > s;
+  return e.status==='notcalled' && NOW.getTime() > breachAt(e);
+}
+
+/* ---------- Helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtN = n => n.toLocaleString('en-IN');
+const pct = (a,b) => b ? a/b*100 : 0;
+const fmtP = (a,b) => b ? Math.round(a/b*100)+'%' : '—';
+function inr(v){ if(!v) return '—'; if(v >= 1e7) return '₹'+(v/1e7).toFixed(2)+' Cr'; if(v >= 1e5) return '₹'+(v/1e5).toFixed(1)+' L'; return '₹'+fmtN(Math.round(v)); }
+const inrFull = v => v ? '₹'+fmtN(Math.round(v)) : '—';
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const pad = n => String(n).padStart(2,'0');
+const fDate = t => { const d = new Date(t); return `${d.getDate()} ${MON[d.getMonth()]}`; };
+const fTime = t => { const d = new Date(t); let h = d.getHours(); const ap = h>=12 ? 'pm' : 'am'; h = h%12 || 12; return `${h}:${pad(d.getMinutes())} ${ap}`; };
+const fDT = t => t >= today0 ? `Today ${fTime(t)}` : t >= today0-DAY ? `Yesterday ${fTime(t)}` : `${fDate(t)}, ${fTime(t)}`;
+function fAgo(min){ min = Math.round(min); if(min < 60) return `${min} min`; const h = Math.floor(min/60); if(h < 24) return `${h} hr${h>1?'s':''}`; const d = Math.floor(h/24); return `${d} day${d>1?'s':''}`; }
+const ymd = t => { const d = new Date(t); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const initials = n => n.split(' ').map(x=>x[0]).join('').slice(0,2);
+const maskPh = p => p.slice(0,2)+'•••••'+p.slice(-3);
+const ageMin = e => (NOW - e.at)/6e4;
+const isLate = e => !e.calls.length && breached(e); // SLA breached and still not called
+const tLabel = k => `${esc(TYPE[k].label)}${isPri(k) ? '<span class="tag">Priority</span>' : ''}`;
+const pill = s => `<span class="pill t-${STATUS[s].tone}">${STATUS[s].label}</span>`;
+
+/* ---------- State ---------- */
+const S = {detail:null, dfilter:'all', dtype:'all', dmore:20, preset:'7d', from:ymd(today0-6*DAY), to:ymd(today0), type:'all', agent:'all', status:'all', q:'', tab:'summary', page:1, sort:{k:'converted', d:-1}};
+let seenAt = 0; try { seenAt = +localStorage.getItem('rlm-evt-seen') || 0; } catch(e){}
+const h0 = location.hash.replace('#','');
+if(['summary','agents','events','daily'].includes(h0)) S.tab = h0;
+else { try { const t = localStorage.getItem('rlm-evt-tab2'); if(t) S.tab = t; } catch(e){} }
+
+function range(){
+  const end = NOW.getTime();
+  switch(S.preset){
+    case 'today': return [today0, end];
+    case 'yesterday': return [today0-DAY, today0-1];
+    case '7d': return [today0-6*DAY, end];
+    case 'month': { const d = new Date(today0); return [new Date(d.getFullYear(), d.getMonth(), 1).getTime(), end]; }
+    default: {
+      const f = S.from ? new Date(S.from+'T00:00').getTime() : today0-6*DAY;
+      const t = S.to ? new Date(S.to+'T23:59:59').getTime() : end;
+      return [Math.min(f,t), Math.max(f,t)];
+    }
+  }
+}
+function filtered(o={}){
+  const [a,b] = range(); const q = S.q.trim().toLowerCase();
+  return EVENTS.filter(e=>{
+    if(e.at < a || e.at > b) return false;
+    if(S.type==='pri'){ if(!isPri(e.type)) return false; }
+    else if(S.type==='sec'){ if(isPri(e.type)) return false; }
+    else if(S.type!=='all' && e.type!==S.type) return false;
+    if(!o.anyAgent && S.agent!=='all' && (S.agent==='none' ? e.agent : e.agent!==S.agent)) return false;
+    if(!o.anyStatus){
+      if(S.status==='pending'){ if(!PENDING.has(e.status)) return false; }
+      else if(S.status==='late'){ if(!isLate(e)) return false; }
+      else if(S.status==='breach'){ if(!breached(e)) return false; }
+      else if(S.status==='called'){ if(!e.calls.length) return false; }
+      else if(S.status==='old'){ if(!(PENDING.has(e.status) && ageMin(e) > 1440)) return false; }
+      else if(S.status!=='all' && e.status!==S.status) return false;
+    }
+    if(q && !`${e.id} ${e.r.name} ${e.r.kp} ${e.r.phone} ${e.r.district} ${e.order||''}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+function stats(list){
+  const s = {received:list.length, assigned:0, unassigned:0, called:0, connected:0, pending:0, late:0, old:0, converted:0, value:0, pri:0, sec:0, breach:0};
+  for(const e of list){
+    if(e.agent) s.assigned++; else s.unassigned++;
+    if(isPri(e.type)){ s.pri++; if(breached(e)) s.breach++; } else s.sec++;
+    if(e.calls.length) s.called++;
+    if(e.calls.some(c=>c.ok)) s.connected++;
+    if(PENDING.has(e.status)){ s.pending++; if(ageMin(e) > 1440) s.old++; }
+    if(isLate(e)) s.late++;
+    if(e.status==='converted'){ s.converted++; s.value += e.orderValue; }
+  }
+  return s;
+}
+
+/* ---------- Filters ---------- */
+function buildTypeFilter(){
+  const g = p => TYPES.filter(t=>isPri(t.k)===p).map(t=>`<option value="${t.k}">${esc(t.label)}</option>`).join('');
+  $('#fType').innerHTML = `<option value="all">All events</option><option value="pri">Priority events</option><option value="sec">Secondary events</option><optgroup label="Priority">${g(true)}</optgroup><optgroup label="Secondary">${g(false)}</optgroup>`;
+}
+function initFilters(){
+  buildTypeFilter();
+  $('#fAgent').innerHTML = `<option value="all">All agents</option>` + AGENTS.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('') + `<option value="none">Not assigned</option>`;
+  $('#fStatus').innerHTML = `<option value="all">Any status</option><option value="pending">Pending (all open)</option><option value="late">SLA breached, still not called</option><option value="breach">SLA breached (all)</option><option value="old">Pending for over 1 day</option><option value="called">Called at least once</option>` + Object.entries(STATUS).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('');
+  $('#fromD').value = S.from; $('#toD').value = S.to; $('#fromD').max = $('#toD').max = ymd(today0);
+  $('#datePresets').addEventListener('click', ev=>{ const b = ev.target.closest('button'); if(b){ S.preset = b.dataset.p; S.page = 1; render(); } });
+  $('#fromD').addEventListener('change', e=>{ S.from = e.target.value; S.page=1; render(); });
+  $('#toD').addEventListener('change', e=>{ S.to = e.target.value; S.page=1; render(); });
+  $('#fType').addEventListener('change', e=>{ S.type = e.target.value; S.page=1; render(); });
+  $('#fAgent').addEventListener('change', e=>{ S.agent = e.target.value; S.page=1; render(); });
+  $('#fStatus').addEventListener('change', e=>{ S.status = e.target.value; S.page=1; render(); });
+  let tm; $('#fSearch').addEventListener('input', e=>{ clearTimeout(tm); tm = setTimeout(()=>{ S.q = e.target.value; S.page=1; render(); }, 160); });
+  $('#resetBtn').addEventListener('click', ()=>{ Object.assign(S, {type:'all', agent:'all', status:'all', q:'', page:1}); $('#fSearch').value=''; render(); });
+  $('#tabs').addEventListener('click', ev=>{ const b = ev.target.closest('button[data-tab]'); if(b) setTab(b.dataset.tab); });
+}
+function setTab(t){ S.detail = null; S.tab = t; S.page = 1; try{ localStorage.setItem('rlm-evt-tab2', t); }catch(e){} try{ history.replaceState(null,'','#'+t); }catch(e){} render(); window.scrollTo({top:0}); }
+function showEvents(status, extra={}){ S.status = status; Object.assign(S, extra); setTab('events'); }
+function syncUI(){
+  document.querySelectorAll('#datePresets button').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.p===S.preset)));
+  $('#customRange').hidden = S.preset !== 'custom';
+  $('#fType').value = S.type; $('#fAgent').value = S.agent; $('#fStatus').value = S.status;
+  $('#resetBtn').hidden = S.type==='all' && S.agent==='all' && S.status==='all' && !S.q;
+  document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected', String(b.dataset.tab===S.tab)));
+  const n = alerts().filter(e=>breachAt(e) > seenAt).length;
+  $('#bellN').hidden = !n; $('#bellN').textContent = n > 99 ? '99+' : n;
+}
+function render(){
+  syncUI();
+  const v = $('#view');
+  $('#tabs').hidden = !!S.detail;
+  if(S.detail){ v.innerHTML = S.detail.kind==='agent' ? agentPage(S.detail.id) : eventPage(S.detail.id, S.detail.from); return; }
+  v.innerHTML = S.tab==='summary' ? vSummary() : S.tab==='agents' ? vAgents() : S.tab==='events' ? vEvents() : vDaily();
+}
+
+/* ---------- Summary ---------- */
+function vSummary(){
+  const list = filtered({anyStatus:true}); const s = stats(list);
+  const tile = (cls, k, v, h, go) => `<button type="button" class="bt ${cls}" data-go="${go}"><span class="k">${k}</span><span class="v">${v}</span><span class="h">${h}</span></button>`;
+  const issues = [
+    [s.late, 'priority events crossed the SLA and are still not called', 'The agent has not made the first call in time.', 'late'],
+    [s.unassigned, 'events are not assigned to any agent', 'Nobody will call these retailers until the lead is assigned.', 'unassigned'],
+    [s.old, 'events are pending for more than 1 day', 'These are at risk of being lost.', 'old'],
+  ].filter(x=>x[0]);
+  const attn = issues.length
+    ? issues.map(([n,t,d,go])=>`<div class="arow"><span class="no">${fmtN(n)}</span><span class="tx"><b>${t}</b><span>${d}</span></span><button class="btn small" type="button" data-go="${go}">Show list</button></div>`).join('')
+    : `<div class="arow ok"><span class="no">✓</span><span class="tx"><b>All clear</b><span>Every event is assigned and called on time.</span></span></div>`;
+
+  const steps = [
+    ['Events received', s.received, null, ''],
+    ['Called by agent', s.called, s.received, `${fmtN(s.received - s.called)} not called`],
+    ['Retailer picked up', s.connected, s.received, `${fmtN(s.called - s.connected)} did not pick up`],
+    ['Order placed', s.converted, s.received, `${inr(s.value)} order value`],
+  ];
+  const journey = steps.map(([l,v,base,note],i)=>`<div class="step"><div class="sl">${l}</div><div class="sv">${fmtN(v)}</div><div class="sp">${base ? fmtP(v, base)+' of events' : 'Starting point'}</div><div class="bar"><i style="width:${base ? pct(v,base) : 100}%"></i></div>${note ? `<div class="${i===3 ? 'sp' : 'lost'}" style="margin-top:6px">${note}</div>` : ''}</div>`).join('');
+
+  const typeRow = t => { const x = stats(list.filter(e=>e.type===t.k)); if(!x.received) return ''; const p = isPri(t.k);
+    return `<tr class="click" data-type="${t.k}"><td>${esc(t.label)}</td><td>${p ? fAgo(CFG[t.k].sla) : '<span class="muted">No SLA</span>'}</td><td class="n">${fmtN(x.received)}</td><td class="n ${p && x.breach ? 'red' : 'muted'}">${p ? fmtN(x.breach) : '—'}</td><td class="n">${fmtN(x.pending)}</td><td class="n">${fmtN(x.converted)} <span class="muted">(${fmtP(x.converted,x.received)})</span></td></tr>`; };
+  const typeGrp = (p, title) => { const rs = TYPES.filter(t=>isPri(t.k)===p).map(typeRow).join(''); return rs ? `<tr class="grp"><td colspan="6">${title}</td></tr>${rs}` : ''; };
+  const byType = typeGrp(true, 'Priority events') + typeGrp(false, 'Secondary events');
+
+  const P = stats(list.filter(e=>isPri(e.type))), Q = stats(list.filter(e=>!isPri(e.type)));
+  const mi = (v, l, cls) => `<span><b class="${cls || ''}">${v}</b><span>${l}</span></span>`;
+  const names = p => TYPES.filter(t=>isPri(t.k)===p).map(t=>esc(t.label)).join(', ') || 'None';
+  const split = `<section class="split">
+    <button type="button" class="sp-card pri" data-cat="pri"><span class="sp-h"><b>Priority events</b><span>${names(true)}</span></span>
+      <span class="mini four">${mi(fmtN(P.received),'Received')}${mi(fmtN(P.breach),'SLA breached',P.breach ? 'red' : '')}${mi(fmtN(P.pending),'Pending')}${mi(fmtN(P.converted),'Orders · '+fmtP(P.converted,P.received),'green')}</span></button>
+    <button type="button" class="sp-card" data-cat="sec"><span class="sp-h"><b>Secondary events</b><span>${names(false)}</span></span>
+      <span class="mini four">${mi(fmtN(Q.received),'Received')}${mi(fmtN(Q.called),'Called')}${mi(fmtN(Q.pending),'Pending')}${mi(fmtN(Q.converted),'Orders · '+fmtP(Q.converted,Q.received),'green')}</span></button>
+  </section>`;
+
+  const ag = AGENTS.map(a=>({a, x:stats(list.filter(e=>e.agent===a.id))}));
+  const worst = ag.filter(r=>r.x.breach).sort((p,q)=>q.x.breach - p.x.breach).slice(0,4);
+  const agList = worst.length
+    ? worst.map(({a,x})=>`<button type="button" class="item" data-agent="${a.id}"><span class="who"><span class="av">${initials(a.name)}</span>${esc(a.name)}</span><span class="red">${fmtN(x.breach)} breached</span></button>`).join('')
+    : `<p class="hint">No agent has breached the SLA.</p>`;
+  const best = ag.filter(r=>r.x.assigned >= 5).sort((p,q)=>pct(q.x.converted,q.x.assigned) - pct(p.x.converted,p.x.assigned))[0];
+
+  return `
+  <section class="big">
+    ${tile('', 'Events received', fmtN(s.received), 'Came into Retail Hub', 'all')}
+    ${tile('', 'Called', fmtN(s.called), `${fmtP(s.called, s.received)} of events got a call`, 'called')}
+    ${tile('warn', 'Pending', fmtN(s.pending), 'Still open, work left', 'pending')}
+    ${tile('good', 'Orders placed', fmtN(s.converted), `${fmtP(s.converted, s.received)} conversion`, 'converted')}
+  </section>
+
+  <section class="attn"><div class="hd"><h2>Needs your attention</h2><span class="hint">Fix these first</span></div>${attn}</section>
+
+  ${split}
+
+  <section class="card"><div class="ch"><h2>How events moved</h2><span class="hint">From event to order</span></div><div class="steps">${journey}</div></section>
+
+  <div class="grid2 wide">
+    <section class="card"><div class="ch"><h2>By event type</h2><span class="hint">Tap a row to see those events</span></div>
+      <div class="tw"><table><thead><tr><th>Event type</th><th>Call within</th><th class="n">Received</th><th class="n">SLA breached</th><th class="n">Pending</th><th class="n">Orders</th></tr></thead>
+      <tbody>${byType || `<tr><td colspan="6" class="empty">No events</td></tr>`}</tbody></table></div>
+    </section>
+    <section class="card"><div class="ch"><h2>Agents</h2><span class="hint">Tap an agent for details</span></div>
+      ${best ? `<p class="sec-t">Best conversion</p><div class="items" style="margin-bottom:16px"><button type="button" class="item" data-agent="${best.a.id}"><span class="who"><span class="av">${initials(best.a.name)}</span>${esc(best.a.name)}</span><span class="green">${fmtP(best.x.converted,best.x.assigned)} · ${fmtN(best.x.converted)} orders</span></button></div>` : ''}
+      <p class="sec-t">Most SLA breaches</p><div class="items">${agList}</div>
+    </section>
+  </div>`;
+}
+
+/* ---------- Agents ---------- */
+function agentRows(){
+  const list = filtered({anyAgent:true});
+  const rows = AGENTS.map(a=>({a, x:stats(list.filter(e=>e.agent===a.id))}));
+  const {k, d} = S.sort;
+  const val = r => k==='name' ? r.a.name : k==='conv' ? pct(r.x.converted, r.x.assigned) : r.x[k];
+  rows.sort((p,q)=>{ const A = val(p), B = val(q); return (A > B ? 1 : A < B ? -1 : 0) * d; });
+  return {rows, list};
+}
+function health(x, teamConv){
+  if(x.late >= 5 || (x.pri >= 5 && pct(x.breach, x.pri) > 30) || (x.assigned && pct(x.called, x.assigned) < 80)) return '<span class="pill t-bad">Needs attention</span>';
+  if(pct(x.converted, x.assigned) >= teamConv) return '<span class="pill t-good">Doing well</span>';
+  return '<span class="pill t-mute">OK</span>';
+}
+function vAgents(){
+  const {rows, list} = agentRows(); const team = stats(list.filter(e=>e.agent));
+  const teamConv = pct(team.converted, team.assigned);
+  const cols = [['name','Agent',''],['pri','Priority events','n'],['breach','SLA breached','n'],['sec','Secondary events','n'],['pending','Pending','n'],['converted','Orders','n'],['conv','Conversion','n']];
+  const th = cols.map(([k,l,c])=>`<th class="sortable ${c}" data-sort="${k}">${l}${S.sort.k===k ? (S.sort.d>0?' ↑':' ↓') : ''}</th>`).join('') + '<th>Status</th>';
+  const body = rows.map(({a,x})=>{ const c = pct(x.converted, x.assigned); return `<tr class="click" data-agent="${a.id}">
+    <td><div class="who"><span class="av">${initials(a.name)}</span>${esc(a.name)}</div></td>
+    <td class="n">${fmtN(x.pri)}</td>
+    <td class="n"><span class="${x.breach ? 'red' : 'muted'}">${fmtN(x.breach)}</span> <span class="muted">(${fmtP(x.breach,x.pri)})</span>${x.late ? `<br><span class="red" style="font-size:12.5px;font-weight:500">${fmtN(x.late)} still not called</span>` : ''}</td>
+    <td class="n">${fmtN(x.sec)}</td>
+    <td class="n">${fmtN(x.pending)}</td>
+    <td class="n">${fmtN(x.converted)}</td>
+    <td class="n"><div class="convbar"><span class="${c >= teamConv ? 'green' : ''}">${fmtP(x.converted,x.assigned)}</span><span class="tr"><i style="width:${Math.min(100,c*2.5)}%"></i></span></div></td>
+    <td>${health(x, teamConv)}</td></tr>`; }).join('');
+  const un = list.filter(e=>!e.agent).length;
+  return `
+  <p class="hint"><b>SLA breached</b> = a priority event that did not get its first call in time. <b>Conversion</b> = orders ÷ all events given. Tap an agent to see every event in detail.</p>
+  <div class="tw"><table><thead><tr>${th}</tr></thead><tbody>${body}</tbody>
+  <tfoot><tr><td>Whole team</td><td class="n">${fmtN(team.pri)}</td><td class="n">${fmtN(team.breach)} <span class="muted">(${fmtP(team.breach,team.pri)})</span></td><td class="n">${fmtN(team.sec)}</td><td class="n">${fmtN(team.pending)}</td><td class="n">${fmtN(team.converted)}</td><td class="n">${fmtP(team.converted,team.assigned)}</td><td></td></tr></tfoot></table></div>
+  ${un ? `<p class="hint"><span class="red">${fmtN(un)} events</span> are not assigned to anyone and are not counted above. <button class="clear" type="button" data-go="unassigned">Show them</button></p>` : ''}`;
+}
+
+/* ---------- Events list ---------- */
+function vEvents(){
+  const list = filtered();
+  const pages = Math.max(1, Math.ceil(list.length / PAGE)); if(S.page > pages) S.page = pages;
+  const rows = list.slice((S.page-1)*PAGE, S.page*PAGE).map(e=>{
+    const ag = e.agent ? AG[e.agent] : null;
+    return `<tr class="click" data-ev="${e.id}">
+      <td>${fDT(e.at)}</td>
+      <td><div class="two"><b>${esc(e.r.name)}</b><span>${e.r.kp} · ${esc(e.r.district)}</span></div></td>
+      <td><div class="two"><b>${tLabel(e.type)}</b><span>${MEANS[e.type].short}</span></div></td>
+      <td>${ag ? esc(ag.name) : '<span class="red">Not assigned</span>'}</td>
+      <td>${callsTxt(e)}</td>
+      <td>${resultCell(e)}</td>
+      <td class="muted" style="font-size:20px">›</td></tr>`;
+  }).join('');
+  const nav = `<div class="btns"><button class="btn small" type="button" data-page="-1" ${S.page<=1?'disabled':''}>← Previous</button><button class="btn small" type="button" data-page="1" ${S.page>=pages?'disabled':''}>Next →</button></div>`;
+  return `
+  <div class="pager"><span>${list.length ? `<b>${fmtN(list.length)}</b> events · newest first · tap a row to see the full story` : 'No events match. Try a wider date range or clear filters.'}</span>${list.length > PAGE ? nav : ''}</div>
+  <div class="tw"><table><thead><tr><th>Came in</th><th>Retailer</th><th>Event</th><th>Agent</th><th>Calls</th><th>What happened</th><th></th></tr></thead>
+  <tbody>${rows || `<tr><td colspan="7" class="empty">Nothing to show</td></tr>`}</tbody></table></div>
+  ${list.length > PAGE ? `<div class="pager"><span class="muted">Page ${S.page} of ${pages}</span>${nav}</div>` : ''}`;
+}
+
+/* ---------- Day by day ---------- */
+function vDaily(){
+  const list = filtered(); const [a,b] = range(); const single = (Math.min(b,NOW.getTime()) - a) <= DAY;
+  const groups = [];
+  if(single){ for(let h=7; h<23; h++){ const s0 = a + h*36e5; const hh = h%12||12; groups.push({label:`${hh}${h<12?'am':'pm'}`, from:s0, to:s0+36e5}); } }
+  else { for(let t=new Date(new Date(a).setHours(0,0,0,0)).getTime(); t<=b; t+=DAY) groups.push({label:fDate(t), from:t, to:t+DAY, sun:new Date(t).getDay()===0}); }
+  groups.forEach(g=>{ g.x = stats(list.filter(e=>e.at>=g.from && e.at<g.to)); });
+  const W = 900, H = 240, P = {l:36, r:8, t:12, b:28}; const cw = W-P.l-P.r, chh = H-P.t-P.b;
+  const maxV = Math.max(5, ...groups.map(g=>g.x.received));
+  const raw = maxV/4, p10 = Math.pow(10, Math.floor(Math.log10(raw))), nr = raw/p10; const step = (nr<=1?1:nr<=2?2:nr<=5?5:10)*p10; const top = Math.ceil(maxV/step)*step;
+  const bw = cw/groups.length, barW = Math.max(4, Math.min(28, bw*.62)); const y = v => P.t + chh - v/top*chh;
+  let svg = '';
+  for(let v=0; v<=top; v+=step) svg += `<line x1="${P.l}" x2="${W-P.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${P.l-8}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--ink-3)">${v}</text>`;
+  const every = Math.ceil(groups.length/15);
+  groups.forEach((g,i)=>{
+    const x = P.l + i*bw + (bw-barW)/2; let yy = P.t + chh; const other = g.x.received - g.x.converted - g.x.pending;
+    [[g.x.converted,'var(--accent)','orders'],[other,'var(--bar-worked)','closed, no order'],[g.x.pending,'var(--warn)','pending']].forEach(([v,c,l])=>{ if(!v) return; const h = v/top*chh; yy -= h; svg += `<rect x="${x}" y="${yy}" width="${barW}" height="${h}" fill="${c}"><title>${g.label}: ${v} ${l}</title></rect>`; });
+    if(i % every === 0) svg += `<text x="${x+barW/2}" y="${H-9}" text-anchor="middle" font-size="11" fill="var(--ink-2)">${g.label}</text>`;
+  });
+  const rows = groups.slice().reverse().filter(g=>!single || g.x.received).map(g=>`<tr><td>${g.label}${g.sun ? ' <span class="muted">(Sun)</span>' : ''}</td><td class="n">${fmtN(g.x.received)}</td><td class="n">${fmtN(g.x.called)}</td><td class="n">${fmtN(g.x.pending)}</td><td class="n">${fmtN(g.x.converted)}</td><td class="n">${fmtP(g.x.converted,g.x.received)}</td></tr>`).join('');
+  const T = stats(list);
+  return `
+  <section class="card"><div class="ch"><h2>${single ? 'Events by hour' : 'Events by day'}</h2>
+    <div class="legend"><span><i style="background:var(--accent)"></i>Order placed</span><span><i style="background:var(--bar-worked)"></i>Closed, no order</span><span><i style="background:var(--warn)"></i>Pending</span></div></div>
+    <div class="chart-wrap"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Events per ${single?'hour':'day'}">${svg}</svg></div></section>
+  <div class="tw"><table><thead><tr><th>${single ? 'Hour' : 'Date'}</th><th class="n">Received</th><th class="n">Called</th><th class="n">Pending</th><th class="n">Orders</th><th class="n">Conversion</th></tr></thead>
+  <tbody>${rows || `<tr><td colspan="6" class="empty">No events</td></tr>`}</tbody>
+  <tfoot><tr><td>Total</td><td class="n">${fmtN(T.received)}</td><td class="n">${fmtN(T.called)}</td><td class="n">${fmtN(T.pending)}</td><td class="n">${fmtN(T.converted)}</td><td class="n">${fmtP(T.converted,T.received)}</td></tr></tfoot></table></div>`;
+}
+
+/* ---------- Detail panels ---------- */
+function openDrawer(html){ $('#drawer').innerHTML = html; $('#drawer').hidden = false; $('#scrim').hidden = false; $('#drawer').querySelector('.x')?.focus(); }
+function closeDrawer(){ $('#drawer').hidden = true; $('#scrim').hidden = true; }
+const IC = {
+  inbox:'<path d="M3 13h5l1.5 3h5L16 13h5"/><path d="M5 5h14l2 8v6H3v-6z"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
+  phone:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>',
+  miss:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/><path d="m16 3 5 5M21 3l-5 5"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  check:'<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
+  alert:'<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17.5v.5"/>',
+  x:'<circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/>',
+  back:'<path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v4h4"/>',
+};
+const svg = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${IC[k]}</svg>`;
+const whenTxt = t => { const day = t >= today0 ? 'Today' : t >= today0-DAY ? 'Yesterday' : fDate(t); return `${day}<br>${fTime(t)}`; };
+const firstCall = e => (e.calls[0].at - e.assignedAt)/6e4;
+function story(e){
+  const ag = e.agent ? AG[e.agent] : null; const first = ag ? ag.name.split(' ')[0] : ''; const age = ageMin(e);
+  const last = e.calls[e.calls.length-1]; const n = e.calls.length;
+  switch(e.status){
+    case 'unassigned': return {tone:'bad', ic:'alert', title:'Not assigned to anyone', text:`This event came ${fAgo(age)} ago. No agent has it, so nobody will call this retailer.`, next:'Assign it to an agent below.'};
+    case 'notcalled': { const sla = slaOf(e), held = fAgo((NOW - gotAt(e))/6e4); return isLate(e)
+      ? {tone:'bad', ic:'clock', title:`SLA breached · waiting ${held}`, text:`${esc(ag.name)} got this priority event but has not called yet. The first call should happen within ${fAgo(sla)}.`, next:`Ask ${esc(first)} to call now, or move the lead to another agent.`}
+      : sla ? {tone:'warn', ic:'clock', title:'Not called yet', text:`Given to ${esc(ag.name)} ${held} ago. Still inside the ${fAgo(sla)} SLA.`, next:`${esc(first)} should call before ${fTime(breachAt(e))}.`}
+      : {tone:'warn', ic:'clock', title:'Not called yet', text:`Given to ${esc(ag.name)} ${held} ago. This is a secondary event, so it has no SLA.`, next:`${esc(first)} should call after the priority events.`}; }
+    case 'notconnected': return {tone:'warn', ic:'miss', title:'Retailer did not pick up', text:`${esc(ag.name)} called ${n} time${n>1?'s':''}. Last try: ${esc(last.out.toLowerCase())}, ${fDT(last.at).toLowerCase()}.`, next:'Call again at a different time of day.'};
+    case 'followup': return {tone:'info', ic:'back', title:'Retailer asked to call back', text:`${esc(ag.name)} spoke to the retailer. They said: “${esc(e.disp)}”.`, next:`${esc(first)} should call again.`};
+    case 'converted': return {tone:'good', ic:'check', title:`Order placed · ${inrFull(e.orderValue)}`, text:`After ${esc(ag.name)}'s call, the retailer placed order ${e.order}.`, next:null};
+    default: return {tone:'mute', ic:'x', title:'Closed, no order', text:`Reason: ${esc(e.disp)}.`, next:null};
+  }
+}
+/* ---------- Full-page details ---------- */
+function openDetail(kind, id, from){ S.detail = {kind, id, from:from || null}; if(kind==='agent'){ S.dfilter = 'all'; S.dtype = 'all'; S.dmore = 20; } render(); window.scrollTo({top:0}); }
+function closeDetail(){ const d = S.detail; if(d && d.kind==='event' && d.from){ S.detail = {kind:'agent', id:d.from}; } else S.detail = null; render(); window.scrollTo({top:0}); }
+
+function callsTxt(e){
+  const n = e.calls.length; if(!n) return '<span class="muted">No call</span>';
+  const pick = e.calls.findIndex(c=>c.ok);
+  return `${n} call${n>1?'s':''}<br><span class="muted" style="font-size:12.5px">${pick >= 0 ? (n===1 ? 'picked up' : `picked up on call ${pick+1}`) : 'never picked up'}</span>`;
+}
+function resultTxt(e){
+  const last = e.calls[e.calls.length-1];
+  switch(e.status){
+    case 'converted': return `<span class="green">Order ${inrFull(e.orderValue)}</span>`;
+    case 'lost': return esc(e.disp);
+    case 'followup': return `Said: “${esc(e.disp)}”`;
+    case 'notconnected': return `Last try: ${esc(last.out.toLowerCase())}`;
+    case 'notcalled': return isLate(e) ? `<span class="red">SLA breached · waiting ${fAgo(ageMin(e))}</span>` : `Waiting ${fAgo(ageMin(e))}`;
+    default: return `<span class="red">Nobody has it · ${fAgo(ageMin(e))}</span>`;
+  }
+}
+const resultCell = e => `<div>${pill(e.status)}<div style="font-size:13px;margin-top:4px;color:var(--ink-2)">${resultTxt(e)}</div></div>`;
+
+/* Journey: 5 fixed steps, each done / fail / warn / todo */
+function journey(e){
+  const ag = e.agent ? AG[e.agent] : null; const n = e.calls.length; const ok = e.calls.find(c=>c.ok);
+  const S5 = [];
+  S5.push({st:'done', ic:'inbox', t:'Event came', d:`${esc(TYPE[e.type].label)}<br>${fDT(e.at)}`});
+  S5.push(ag ? {st:'done', ic:'user', t:'Given to agent', d: e.movedFrom ? `${esc(ag.name)}<br>moved with lead from ${esc(AG[e.movedFrom].name.split(' ')[0])}` : `${esc(ag.name)}<br>${fDT(e.assignedAt)}`}
+             : {st:'fail', ic:'alert', t:'Given to agent', d:`Not assigned<br>waiting ${fAgo(ageMin(e))}`});
+  S5.push(!ag ? {st:'todo', ic:'phone', t:'Agent called', d:'—'}
+    : n ? {st:'done', ic:'phone', t:'Agent called', d:`${n} call${n>1?'s':''}<br>first after ${fAgo(firstCall(e))}${breached(e) ? ' · <span style="color:var(--bad)">SLA missed</span>' : ''}`}
+    : {st:isLate(e) ? 'fail' : 'warn', ic:'clock', t:'Agent called', d:isLate(e) ? `Not called<br>SLA missed by ${fAgo((NOW - breachAt(e))/6e4)}` : slaOf(e) ? `Not yet<br>SLA is ${fAgo(slaOf(e))}` : 'Not yet<br>no SLA'});
+  S5.push(!n ? {st:'todo', ic:'user', t:'Retailer talked', d:'—'}
+    : ok ? {st:'done', ic:'phone', t:'Retailer talked', d:`Yes, ${Math.max(1,Math.round(ok.dur/60))} min<br>${fDT(ok.at)}`}
+    : {st:'fail', ic:'miss', t:'Retailer talked', d:`No, did not pick up<br>${n} tr${n>1?'ies':'y'}`});
+  const R = {
+    converted:{st:'done', ic:'check', d:`Order placed<br><b>${inrFull(e.orderValue)}</b>`},
+    lost:{st:'fail', ic:'x', d:`No order<br>${esc(e.disp)}`},
+    followup:{st:'warn', ic:'back', d:`Call back<br>“${esc(e.disp)}”`},
+  }[e.status] || {st:'todo', ic:'check', d:'Pending'};
+  S5.push({t:'Result', ...R});
+  return `<div class="track">${S5.map(s=>`<div class="tstep ${s.st}"><span class="tdot">${svg(s.ic)}</span><b>${s.t}</b><span>${s.d}</span></div>`).join('')}</div>`;
+}
+
+function eventPage(id, from){
+  const e = EVENTS.find(x=>x.id===id); if(!e) return '<p class="empty">Event not found</p>';
+  const ag = e.agent ? AG[e.agent] : null; const st = story(e);
+  const back = from && AG[from] ? `Back to ${esc(AG[from].name)}` : 'Back';
+  const agentOpts = AGENTS.filter(a=>a.id!==e.agent).map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+  const acts = PENDING.has(e.status) ? `<div class="acts">
+      <select class="sel" id="assignTo" aria-label="Agent"><option value="">${ag ? 'Move lead to another agent…' : 'Choose agent…'}</option>${agentOpts}</select>
+      <button class="btn ${ag ? '' : 'primary'} small" type="button" data-assign="${e.id}">${ag ? 'Move lead' : 'Assign lead'}</button>
+      ${ag ? `<button class="btn small" type="button" data-copyphone="${e.r.phone}">${svg('phone')}Copy retailer number</button>` : ''}</div>
+      <p class="hint" style="margin-top:8px">All open events of this retailer move with the lead automatically.</p>` : '';
+  const sla = slaOf(e);
+
+  const callRows = e.calls.map((c,i)=>`<tr><td>Call ${i+1}</td><td>${fDT(c.at)}</td><td>${c.ok ? '<span class="pill t-good">Picked up</span>' : `<span class="pill t-warn">${esc(c.out)}</span>`}</td><td class="n">${c.ok ? `${Math.max(1,Math.round(c.dur/60))} min` : '—'}</td><td>${c.ok && i===e.calls.length-1 ? (e.status==='converted' ? 'Agreed to order' : esc(e.disp)) : '<span class="muted">—</span>'}</td></tr>`).join('');
+  const calls = e.calls.length
+    ? `<div class="tw"><table><thead><tr><th>Call</th><th>When</th><th>Result</th><th class="n">Talk time</th><th>Retailer said</th></tr></thead><tbody>${callRows}</tbody></table></div>`
+    : `<p class="hint" style="margin:0">${ag ? `${esc(ag.name)} has not called this retailer yet.` : 'No agent has this event, so no calls were made.'}</p>`;
+
+  const cart = e.items.length ? `<div class="cart">${e.items.map(i=>`<div><span>${esc(i.p)} <span class="muted">× ${i.qty} pcs</span></span><span class="num">${inrFull(i.price*i.qty)}</span></div>`).join('')}<div class="tot"><span>Cart total</span><span class="num">${inrFull(e.value)}</span></div>${e.status==='converted' ? `<div class="tot" style="background:var(--accent-soft);color:var(--accent)"><span>Order placed · ${e.order}</span><span class="num">${inrFull(e.orderValue)}</span></div>` : ''}</div>`
+    : `<div class="cart"><div>${e.viewed ? `<span>${esc(e.viewed)} <span class="muted">viewed 3 times</span></span>` : '<span class="muted">No cart in this event</span>'}<span></span></div>${e.status==='converted' ? `<div class="tot" style="background:var(--accent-soft);color:var(--accent)"><span>Order placed · ${e.order}</span><span class="num">${inrFull(e.orderValue)}</span></div>` : ''}</div>`;
+
+  const others = EVENTS.filter(x=>x.r===e.r && x.id!==e.id).slice(0,5);
+  const otherHtml = others.length ? `<div class="items">${others.map(x=>`<button type="button" class="item" data-ev="${x.id}"><span><b style="font-weight:500">${esc(TYPE[x.type].label)}</b><br><span class="muted" style="font-size:12.5px">${fDT(x.at)}</span></span><span style="text-align:right">${pill(x.status)}<br><span style="font-size:12.5px">${resultTxt(x)}</span></span></button>`).join('')}</div>` : '<p class="hint" style="margin:0">No other events from this retailer.</p>';
+
+  return `
+  <button class="backlink" type="button" data-back>← ${back}</button>
+  <header class="phead">
+    <div><div class="muted" style="font-size:13px">Event <span class="mono">${e.id}</span> · ${esc(TYPE[e.type].label)}</div><h2 class="ptitle">${esc(e.r.name)}</h2><div class="sub2">${e.r.kp} · ${esc(e.r.district)}, ${e.r.state} · <span class="mono">${maskPh(e.r.phone)}</span></div></div>
+    <div>${pill(e.status)}</div>
+  </header>
+
+  <section class="card"><div class="ch"><h2>What happened with this event</h2><span class="hint">Step by step, left to right</span></div>${journey(e)}</section>
+
+  <div class="cols">
+    <div class="colL">
+      <section class="means"><span class="ic">${svg('inbox')}</span><div><p class="sec-t" style="margin:0 0 2px">What is this event?</p><b>${tLabel(e.type)}</b><p>${MEANS[e.type].long} <span class="why">${MEANS[e.type].why}</span></p><p class="muted" style="font-size:13.5px">${sla ? `Priority event · first call within ${fAgo(sla)}` : 'Secondary event · no SLA'}</p></div></section>
+      <section class="story s-${st.tone}"><span class="ic">${svg(st.ic)}</span><div style="flex:1;min-width:0"><p class="sec-t" style="margin:0 0 2px;color:inherit;opacity:.8">Right now</p><h4>${st.title}</h4><p>${st.text}</p>${st.next ? `<div class="next">${st.next}</div>` : ''}${acts}</div></section>
+      <div><p class="sec-t">Every call made</p>${calls}</div>
+    </div>
+    <div class="colR">
+      <div><p class="sec-t">${e.status==='converted' ? 'Cart and order' : 'What was in the cart'}</p>${cart}</div>
+      <div><p class="sec-t">Agent</p>${ag ? `<button type="button" class="item" data-agent="${ag.id}"><span class="who"><span class="av">${initials(ag.name)}</span>${esc(ag.name)}</span><span class="muted">View agent ›</span></button>${e.movedFrom ? `<p class="hint" style="margin:6px 0 0">Moved automatically with the lead from ${esc(AG[e.movedFrom].name)}, ${fDT(e.movedAt).toLowerCase()}.</p>` : ''}` : '<p class="red" style="margin:0">Not assigned</p>'}</div>
+      <div><p class="sec-t">Other events from this retailer</p>${otherHtml}</div>
+    </div>
+  </div>`;
+}
+
+function avgFirst(list){ const c = list.filter(e=>e.calls.length); return c.length ? c.reduce((s,e)=>s+firstCall(e),0)/c.length : null; }
+function agentPage(id){
+  const a = AG[id]; const all = filtered({anyAgent:true, anyStatus:true});
+  const l = all.filter(e=>e.agent===id); const x = stats(l);
+  const teamL = all.filter(e=>e.agent); const T = stats(teamL);
+  const first = a.name.split(' ')[0];
+  const callP = pct(x.called, x.assigned), teamCallP = pct(T.called, T.assigned);
+  const conv = pct(x.converted, x.assigned), teamConv = pct(T.converted, T.assigned);
+  const tat = avgFirst(l), teamTat = avgFirst(teamL);
+  const brP = pct(x.breach, x.pri);
+  const bad = x.late >= 5 || (x.pri >= 5 && brP > 30) || (x.assigned && callP < 80); const good = !bad && conv >= teamConv;
+  const st = bad
+    ? {tone:'bad', ic:'alert', title:'Needs attention', text:`${esc(first)} got ${fmtN(x.pri)} priority events and missed the SLA on ${fmtN(x.breach)} of them (${Math.round(brP)}%).${x.late ? ` <b>${fmtN(x.late)} are still not called.</b>` : ''}`, next: x.late ? `Ask ${esc(first)} to call the ${fmtN(x.late)} waiting priority events first.` : `Ask ${esc(first)} to call priority events before anything else.`}
+    : good ? {tone:'good', ic:'check', title:'Doing well', text:`${esc(first)} called ${Math.round(callP)}% of events and turned ${fmtN(x.converted)} into orders, better than the team average.`, next:null}
+    : {tone:'info', ic:'user', title:'On track', text:`${esc(first)} called ${Math.round(callP)}% of events. ${fmtN(x.converted)} became orders.`, next: x.pending ? `${fmtN(x.pending)} events are still open.` : null};
+  const cmp = (label, val, sub, better) => `<div><span>${label}</span><b>${val}</b><small>${sub}${better == null ? '' : better ? ' · <span class="green">better</span>' : ' · <span class="red">worse</span>'}</small></div>`;
+
+  // What happened to each event type
+  const tRows = TYPES.map(t=>{
+    const lt = l.filter(e=>e.type===t.k); if(!lt.length) return '';
+    const c = lt.filter(e=>e.calls.length).length, p = lt.filter(e=>e.calls.some(k=>k.ok)).length;
+    const o = lt.filter(e=>e.status==='converted'); const lost = lt.filter(e=>e.status==='lost').length; const open = lt.filter(e=>PENDING.has(e.status)).length; const late = lt.filter(isLate).length; const br = lt.filter(breached).length;
+    return `<tr class="click ${S.dtype===t.k ? 'sel-row' : ''}" data-dtype="${t.k}"><td><div class="two"><b>${tLabel(t.k)}</b><span>${MEANS[t.k].short}</span></div></td><td class="n">${lt.length}</td><td class="n ${br ? 'red' : 'muted'}">${isPri(t.k) ? br : '—'}</td><td class="n">${c}</td><td class="n">${p}</td><td class="n green">${o.length}<br><span class="muted" style="font-weight:400;font-size:12.5px">${inr(o.reduce((s,e)=>s+e.orderValue,0))}</span></td><td class="n">${lost}</td><td class="n">${open}${late ? `<br><span class="red" style="font-size:12.5px">${late} past SLA</span>` : ''}</td></tr>`;
+  }).sort((p,q)=>q.includes('class="tag"') - p.includes('class="tag"')).join('');
+
+  // Event list with quick filters
+  const F = {all:()=>true, late:breached, open:e=>PENDING.has(e.status), orders:e=>e.status==='converted', closed:e=>e.status==='lost'};
+  const FL = [['all','All'],['late','SLA breached'],['open','Still open'],['orders','Orders'],['closed','Closed, no order']];
+  const base = l.filter(e=>S.dtype==='all' || e.type===S.dtype);
+  const chips = FL.map(([k,lab])=>{ const n = base.filter(F[k]).length; return `<button type="button" class="fchip ${S.dfilter===k ? 'on' : ''} ${k==='late' && n ? 'hot' : ''}" data-dfilter="${k}">${lab} <b>${n}</b></button>`; }).join('');
+  const shown = base.filter(F[S.dfilter]).sort((p,q)=>q.at-p.at);
+  const rows = shown.slice(0, S.dmore).map(e=>`<tr class="click" data-ev="${e.id}" data-from="${a.id}"><td>${fDT(e.at)}</td><td><div class="two"><b>${esc(e.r.name)}</b><span>${e.r.kp} · ${esc(e.r.district)}</span></div></td><td><div class="two"><b>${tLabel(e.type)}</b><span>${MEANS[e.type].short}</span></div></td><td>${callsTxt(e)}</td><td>${resultCell(e)}</td><td class="muted" style="font-size:20px">›</td></tr>`).join('');
+
+  return `
+  <button class="backlink" type="button" data-back>← Back</button>
+  <header class="phead">
+    <div class="who"><span class="av" style="width:52px;height:52px;font-size:17px">${initials(a.name)}</span><div><h2 class="ptitle">${esc(a.name)}</h2><div class="sub2">Agent · <span class="mono">${a.id}</span> · ${fmtN(x.assigned)} events in this date range</div></div></div>
+    <button class="btn" type="button" data-agentlog="${a.id}">Open in All events</button>
+  </header>
+  <div class="cols">
+    <section class="story s-${st.tone}" style="align-self:start"><span class="ic">${svg(st.ic)}</span><div style="flex:1;min-width:0"><h4>${st.title}</h4><p>${st.text}</p>${st.next ? `<div class="next">${st.next}</div>` : ''}</div></section>
+    <div class="qf">
+      ${cmp('Events given', fmtN(x.assigned), `${fmtN(x.pri)} priority · ${fmtN(x.sec)} secondary`, null)}
+      ${cmp('Priority SLA breached', `${fmtN(x.breach)} (${fmtP(x.breach,x.pri)})`, `Team: ${fmtP(T.breach,T.pri)}`, x.pri ? brP <= pct(T.breach,T.pri) : null)}
+      ${cmp('Orders', `${fmtN(x.converted)} (${fmtP(x.converted,x.assigned)})`, `Team: ${fmtP(T.converted,T.assigned)}`, x.assigned ? conv >= teamConv : null)}
+      ${cmp('First call after', tat == null ? '—' : fAgo(tat), `Team: ${teamTat == null ? '—' : fAgo(teamTat)}`, tat == null ? null : tat <= teamTat)}
+    </div>
+  </div>
+
+  <section class="card"><div class="ch"><h2>What happened to each type of event</h2><span class="hint">Tap a row to see only those events below</span></div>
+    <div class="tw"><table><thead><tr><th>Event type</th><th class="n">Given</th><th class="n">SLA breached</th><th class="n">Called</th><th class="n">Retailer talked</th><th class="n">Order placed</th><th class="n">Closed, no order</th><th class="n">Still open</th></tr></thead>
+    <tbody>${tRows || '<tr><td colspan="8" class="empty">No events</td></tr>'}</tbody>
+    <tfoot><tr><td>All events</td><td class="n">${fmtN(x.assigned)}</td><td class="n">${fmtN(x.breach)}</td><td class="n">${fmtN(x.called)}</td><td class="n">${fmtN(x.connected)}</td><td class="n">${fmtN(x.converted)}<br><span class="muted" style="font-weight:400;font-size:12.5px">${inr(x.value)}</span></td><td class="n">${fmtN(l.filter(e=>e.status==='lost').length)}</td><td class="n">${fmtN(x.pending)}</td></tr></tfoot></table></div>
+  </section>
+
+  <section>
+    <div class="ch2"><h2 class="h2">Every event of ${esc(first)} and what happened ${S.dtype!=='all' ? `<span class="chip">${esc(TYPE[S.dtype].label)} <button type="button" data-dtype="all" aria-label="Show all types">×</button></span>` : ''}</h2><div class="fchips">${chips}</div></div>
+    <div class="tw"><table><thead><tr><th>Came in</th><th>Retailer</th><th>Event</th><th>Calls</th><th>What happened</th><th></th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="6" class="empty">No events here</td></tr>'}</tbody></table></div>
+    ${shown.length > S.dmore ? `<div style="text-align:center;margin-top:12px"><button class="btn" type="button" data-dmore>Show more (${fmtN(shown.length - S.dmore)} left)</button></div>` : ''}
+  </section>`;
+}
+
+/* ---------- Clicks ---------- */
+document.addEventListener('click', ev=>{
+  const t = ev.target;
+  if(t.closest('[data-close]') || t.id==='scrim'){ closeDrawer(); return; }
+  if(t.closest('#bellBtn')){ openAlerts(); return; }
+  if(t.closest('#slaBtn')){ openDrawer(settingsHtml()); return; }
+  if(t.closest('[data-cfgreset]')){ CFG = CFG_DEF(); saveCfg(); buildTypeFilter(); $('#drawer').innerHTML = settingsHtml(); render(); toast('Back to default settings'); return; }
+  if(t.closest('[data-back]')){ closeDetail(); return; }
+  const go = t.closest('[data-go]'); if(go){ closeDrawer(); S.detail = null; showEvents(go.dataset.go, go.dataset.all ? {type:'all', agent:'all', q:''} : {}); return; }
+  const cat = t.closest('[data-cat]'); if(cat){ S.type = cat.dataset.cat; S.status = 'all'; setTab('events'); return; }
+  const dt = t.closest('[data-dtype]'); if(dt){ S.dtype = (S.dtype===dt.dataset.dtype ? 'all' : dt.dataset.dtype); S.dmore = 20; render(); return; }
+  const df = t.closest('[data-dfilter]'); if(df){ S.dfilter = df.dataset.dfilter; S.dmore = 20; render(); return; }
+  if(t.closest('[data-dmore]')){ S.dmore += 20; render(); return; }
+  const ty = t.closest('tr[data-type]'); if(ty){ S.type = ty.dataset.type; S.status = 'all'; setTab('events'); return; }
+  const srt = t.closest('th[data-sort]'); if(srt){ const k = srt.dataset.sort; S.sort = {k, d: S.sort.k===k ? -S.sort.d : (k==='name' ? 1 : -1)}; render(); return; }
+  const asg = t.closest('[data-assign]'); if(asg){ const v = $('#assignTo').value; if(!v){ toast('Choose an agent first'); return; } const e = EVENTS.find(x=>x.id===asg.dataset.assign); const n = moveLead(e.r, v, NOW.getTime()); render(); toast(`Lead moved to ${AG[v].name}. ${n} open event${n===1?'':'s'} moved with it.`); return; }
+  const cp = t.closest('[data-copyphone]'); if(cp){ const num = cp.dataset.copyphone; navigator.clipboard.writeText(num).then(()=>toast(`Copied ${num}`)).catch(()=>toast(`Number: ${num}`)); return; }
+  const ev2 = t.closest('[data-ev]'); if(ev2){ closeDrawer(); openDetail('event', ev2.dataset.ev, ev2.dataset.from || (S.detail && S.detail.kind==='agent' ? S.detail.id : (S.detail && S.detail.from))); return; }
+  const agr = t.closest('[data-agent]'); if(agr){ openDetail('agent', agr.dataset.agent); return; }
+  const pg = t.closest('[data-page]'); if(pg){ S.page += +pg.dataset.page; render(); $('#tabs').scrollIntoView({block:'start'}); return; }
+  const al = t.closest('[data-agentlog]'); if(al){ S.detail = null; S.agent = al.dataset.agentlog; S.status = 'all'; setTab('events'); return; }
+});
+document.addEventListener('keydown', e=>{ if(e.key!=='Escape') return; if(!$('#drawer').hidden) closeDrawer(); else if(S.detail) closeDetail(); });
+document.addEventListener('change', ev=>{
+  const t = ev.target;
+  if(t.dataset.cfgpri){ CFG[t.dataset.cfgpri].pri = t.checked; t.closest('.cfgrow').querySelector('select').disabled = !t.checked; }
+  else if(t.dataset.cfgsla){ CFG[t.dataset.cfgsla].sla = +t.value; }
+  else return;
+  saveCfg(); buildTypeFilter(); render();
+});
+
+/* ---------- SLA alerts + settings (side panel) ---------- */
+function alerts(){ return EVENTS.filter(e=>isLate(e) && NOW - breachAt(e) < DAY).sort((p,q)=>breachAt(q) - breachAt(p)); }
+function openAlerts(){
+  const list = alerts();
+  const rows = list.slice(0,40).map(e=>`<button type="button" class="item" data-ev="${e.id}"><span><b style="font-weight:600">${esc(AG[e.agent].name)} missed the ${fAgo(slaOf(e))} SLA</b><br><span class="muted" style="font-size:12.5px">${esc(TYPE[e.type].label)} · ${esc(e.r.name)}</span></span><span class="red" style="font-size:12.5px;white-space:nowrap">${fAgo((NOW - breachAt(e))/6e4)} ago${breachAt(e) > seenAt ? '<span class="dot"></span>' : ''}</span></button>`).join('');
+  openDrawer(`<div class="dh"><div><h3>SLA alerts</h3><div class="sub2">Priority events not called in time · last 24 hours</div></div><button class="x" type="button" data-close aria-label="Close">×</button></div>
+  <div class="db">${list.length ? `<div class="items">${rows}</div>${list.length > 40 ? `<p class="hint">and ${list.length - 40} more</p>` : ''}` : '<p class="empty">No SLA was breached in the last 24 hours.</p>'}
+  <button class="btn" type="button" data-go="late" data-all="1">See every breached event</button></div>`);
+  seenAt = NOW.getTime(); try { localStorage.setItem('rlm-evt-seen', seenAt); } catch(e){}
+  syncUI();
+}
+function settingsHtml(){
+  const rows = TYPES.map(t=>{ const c = CFG[t.k]; return `<div class="cfgrow"><div class="two"><b>${esc(t.label)}</b><span>${MEANS[t.k].short}</span></div>
+    <label class="sw"><input type="checkbox" data-cfgpri="${t.k}" ${c.pri ? 'checked' : ''}>Priority</label>
+    <select class="sel" data-cfgsla="${t.k}" aria-label="Call within" ${c.pri ? '' : 'disabled'}>${SLA_OPTS.map(m=>`<option value="${m}" ${m===c.sla ? 'selected' : ''}>Call within ${fAgo(m)}</option>`).join('')}</select></div>`; }).join('');
+  return `<div class="dh"><div><h3>SLA settings</h3><div class="sub2">Choose the priority events and how fast they must be called</div></div><button class="x" type="button" data-close aria-label="Close">×</button></div>
+  <div class="db"><p class="note">A <b>priority</b> event must get its first call within the time set here. If the agent misses it, it counts as an <b>SLA breach</b> for that agent and you get an alert. Every other event is <b>secondary</b> and has no SLA.</p>
+  <div>${rows}</div>
+  <div class="acts" style="margin:0"><button class="btn small" type="button" data-cfgreset>Reset to default</button><span class="hint">Changes are saved right away.</span></div></div>`;
+}
+
+/* ---------- Download ---------- */
+function report(){
+  const [a,b] = range(); const tag = `${ymd(a)}_to_${ymd(b)}`;
+  if(S.tab==='agents'){
+    const {rows} = agentRows();
+    return {name:`events-by-agent_${tag}.csv`, rows:[['Agent','Agent ID','Events given','Priority events','SLA breached','SLA breached, still not called','Secondary events','Called','Pending','Orders','Conversion %','Order value (INR)'],
+      ...rows.map(({a,x})=>[a.name,a.id,x.assigned,x.pri,x.breach,x.late,x.sec,x.called,x.pending,x.converted,Math.round(pct(x.converted,x.assigned)),Math.round(x.value)])]};
+  }
+  if(S.tab==='daily'){
+    const days = {}; filtered().forEach(e=>{ (days[ymd(e.at)] ||= []).push(e); });
+    return {name:`events-by-day_${tag}.csv`, rows:[['Date','Received','Called','Pending','Orders','Conversion %','Order value (INR)'],
+      ...Object.keys(days).sort().map(k=>{ const x = stats(days[k]); return [k,x.received,x.called,x.pending,x.converted,Math.round(pct(x.converted,x.received)),Math.round(x.value)]; })]};
+  }
+  const list = S.tab==='summary' ? filtered({anyStatus:true}) : filtered();
+  const t = v => v ? `${ymd(v)} ${fTime(v)}` : '';
+  return {name:`events-list_${tag}.csv`, rows:[['Event ID','Received','Event type','Category','SLA (min)','Retailer','Retailer ID','District','State','Agent','Moved with lead from','First call','Calls made','Status','Reason','SLA breached','Order ID','Order value (INR)'],
+    ...list.map(e=>[e.id,t(e.at),TYPE[e.type].label,isPri(e.type)?'Priority':'Secondary',slaOf(e)||'',e.r.name,e.r.kp,e.r.district,e.r.state,e.agent?AG[e.agent].name:'Not assigned',e.movedFrom?AG[e.movedFrom].name:'',e.calls.length?t(e.calls[0].at):'',e.calls.length,STATUS[e.status].label,e.disp,breached(e)?'Yes':'No',e.order||'',e.orderValue||''])]};
+}
+const toCsv = rows => rows.map(r=>r.map(v=>{ const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; }).join(',')).join('\n');
+let downloads = null;
+try { window.claude?.use?.('downloads').then(d=>{ downloads = d; }).catch(()=>{}); } catch(e){}
+async function copyCsv(csv, n){
+  try { await navigator.clipboard.writeText(csv); toast(`${n} rows copied. Paste into Google Sheets or Excel.`); }
+  catch(e){ toast('Download is not available here.'); }
+}
+$('#exportBtn').addEventListener('click', async ()=>{
+  const {name, rows} = report(); const csv = toCsv(rows); const n = rows.length-1;
+  if(!downloads){ copyCsv(csv, n); return; }
+  try { await downloads.save({filename:name, data:csv}); toast(`Downloaded ${name}`); }
+  catch(e){ if(e && e.code==='declined') toast('Download cancelled'); else copyCsv(csv, n); }
+});
+let tt; function toast(m){ const el = $('#toast'); el.textContent = m; el.hidden = false; clearTimeout(tt); tt = setTimeout(()=>el.hidden = true, 3200); }
+
+initFilters();
+render();
+})();
+</script>
+</body></html>
